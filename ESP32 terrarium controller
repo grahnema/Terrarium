@@ -1,4 +1,3 @@
-#include <Adafruit_LiquidCrystal.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
@@ -6,27 +5,33 @@
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 #include <TimeLib.h>
+#include <LiquidCrystal_I2C.h>
 
 #define LED_GPIO   5
 #define PWM1_Ch    0
 #define PWM1_Res   8
 #define PWM1_Freq  5000
 
-Adafruit_LiquidCrystal lcd(0x20);
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, -14400);
+NTPClient timeClient(ntpUDP, -14400, 3600);
 Adafruit_BME280 bme;
+
+int lcdColumns = 20;
+int lcdRows = 4;
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 
 int PWM1_DutyCycle = 0;
 int RelayPin = 4;
 int ledState = LOW;
+
 unsigned long previousMillis = 0;
 unsigned long time_now = 0;
 long OnTime = 900000;
 long OffTime = 5400000;
 float temperature, humidity;
-const char* ssid = "**************";
-const char* password = "*************";
+
+const char* ssid = "TwinLakesLab";
+const char* password = "Cat$E@tH0tD0g$";
 
 char Time[ ] = "TIME:00:00:00";
 int last_second, second_, minute_, hour_;
@@ -41,36 +46,27 @@ unsigned long incrInterval = sunRiseSetTime / 256;  // Total time divided by res
 unsigned long lastUpdate = 0;
 
 void setup() {
-lcd.begin(20, 4);
-  ledcSetup(PWM1_Ch, PWM1_Freq, PWM1_Res);
+lcd.init();
+  lcd.backlight();
+
+ledcSetup(PWM1_Ch, PWM1_Freq, PWM1_Res);
   ledcAttachPin(LED_GPIO, PWM1_Ch);
 
-  
+Serial.begin(115200);
 
-  Serial.begin(115200);
   Serial.printf("Connecting to %s", ssid);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+Serial.print(".");
   }
   Serial.println(" CONNECTED");
   pinMode(2, OUTPUT);
   pinMode(RelayPin, OUTPUT);
-  delay(1000);
 
-  // Initialize a NTPClient to get time
   timeClient.begin();
-  // Set offset time in seconds to adjust for your timezone, for example:
-  // GMT +1 = 3600
-  // GMT +8 = 28800
-  // GMT -4 = -14400
-  // GMT 0 = 0
-  //timeClient.setTimeOffset(-14400);
 
   bme.begin(0x76);
   Serial.println("BME Initialized");
-  
 
   Serial.print("Sun rise/set Time: ");
   Serial.println(sunRiseSetTime);
@@ -79,21 +75,19 @@ lcd.begin(20, 4);
 }
 
 void loop() {
-
-  lcd.setBacklight(HIGH);
   humidity = bme.readHumidity();
   temperature = bme.readTemperature();
 
   if (humidity >= 90) {
     digitalWrite(2, HIGH);
     //Serial.println("Fan1 On");
-    //lcd.setCursor(0, 0);
-    //lcd.print ("Fan1 On");
+    lcd.setCursor(0, 0);
+    lcd.print ("Fan1 On");
   } else if (humidity <= 85) {
     digitalWrite(2, LOW);
     //Serial.println("Fan1 Off");
-   // lcd.setCursor(0, 0);
-   // lcd.print ("Fan1 Off");
+    lcd.setCursor(0, 0);
+    lcd.print ("Fan1 Off");
   }
 
   unsigned long currentMillis = millis();
@@ -103,22 +97,21 @@ void loop() {
     previousMillis = currentMillis;
     digitalWrite(RelayPin, ledState);
     //Serial.println("Fan2 Off");
-   // lcd.setCursor(9, 0);
-   // lcd.print ("Fan2 Off");
+    lcd.setCursor(9, 0);
+    lcd.print ("Fan2 Off");
   }
   else if ((ledState == LOW) && (currentMillis - previousMillis >= OffTime)) {
     ledState = HIGH;
     previousMillis = currentMillis;
     digitalWrite(RelayPin, ledState);
     //Serial.println("Fan2 On");
-    //lcd.clear();
-    //lcd.setCursor(9, 0);
-    //lcd.print ("Fan2 On");
+    lcd.clear();
+    lcd.setCursor(9, 0);
+    lcd.print ("Fan2 On");
   }
-timeClient.update();
- //while(!timeClient.update()) {
- // timeClient.forceUpdate();
-// }
+
+  timeClient.update();
+
   unsigned long unix_epoch = timeClient.getEpochTime();
   second_ = second(unix_epoch);
 
@@ -136,26 +129,23 @@ timeClient.update();
     last_second = second_;
     checkSunTime();   // Check if its sunrise or sunset time
   }
-
-  if (sunrise == true || sunset == true) {  // Chnage brightness only if its sunrise or sunset time
+ if (sunrise == true || sunset == true) {  // Chnage brightness only if its sunrise or sunset time
     ledFade();   // Fade up or fade down, depending on time of the day
   }
-
 }
 
-//void printDisplay() {
- // lcd.setCursor(0, 1);
- // lcd.print("RH=");
- // lcd.print(humidity);
-//  lcd.print("%  ");
-//  lcd.setCursor(10, 1);
-//  lcd.print("Tmp=");
- // lcd.print(temperature);
- // lcd.print("C  ");
-
-  //lcd.setCursor(0, 3);
-  //lcd.print(Time);
-//}
+void printDisplay() {
+  lcd.setCursor(0, 1);
+  lcd.print("RH=");
+  lcd.print(humidity);
+  lcd.print("%  ");
+  lcd.setCursor(10, 1);
+  lcd.print("Tmp=");
+  lcd.print(temperature);
+  lcd.print("C  ");
+  lcd.setCursor(0, 3);
+  lcd.print(Time);
+}
 
 void checkSunTime() {
   if (sunriseTime[0] == hour_ && sunriseTime[1] == minute_ && sunrise == false) {
