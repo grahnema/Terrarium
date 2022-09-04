@@ -30,8 +30,8 @@ long OnTime = 900000;
 long OffTime = 5400000;
 float temperature, humidity;
 
-const char* ssid = "TwinLakesLab";
-const char* password = "Cat$E@tH0tD0g$";
+const char* ssid = "************";
+const char* password = "************";
 
 char Time[ ] = "TIME:00:00:00";
 int last_second, second_, minute_, hour_;
