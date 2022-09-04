@@ -10,4 +10,4 @@ Currently developing:<br>
 -Turn on moonlight when main lights are off <br>
 -ESP-NOW control of remote relay to turn on/off Misting system pump based on schedule and low humidity conditions<br> 
 -Web interface to monitor and configure settings <br>
-
+-OTA updates 
