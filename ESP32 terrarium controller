@@ -13,7 +13,7 @@
 #define PWM1_Freq  5000
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, -14400, 3600);
+NTPClient timeClient(ntpUDP,"pool.ntp.org", -14400, 3600);
 Adafruit_BME280 bme;
 
 int lcdColumns = 20;
